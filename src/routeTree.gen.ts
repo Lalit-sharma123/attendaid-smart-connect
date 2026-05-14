@@ -9,9 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StudentRouteImport } from './routes/student'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AccessDeniedRouteImport } from './routes/access-denied'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StudentIndexRouteImport } from './routes/student.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as StudentProfileRouteImport } from './routes/student.profile'
+import { Route as StudentHelpRouteImport } from './routes/student.help'
+import { Route as StudentAttendanceRouteImport } from './routes/student.attendance'
 import { Route as AdminStudentsRouteImport } from './routes/admin.students'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
@@ -25,9 +32,24 @@ import { Route as AdminAttendanceRouteImport } from './routes/admin.attendance'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AdminAlertsRouteImport } from './routes/admin.alerts'
 
+const StudentRoute = StudentRouteImport.update({
+  id: '/student',
+  path: '/student',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccessDeniedRoute = AccessDeniedRouteImport.update({
+  id: '/access-denied',
+  path: '/access-denied',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -35,10 +57,30 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudentIndexRoute = StudentIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudentRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const StudentProfileRoute = StudentProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentHelpRoute = StudentHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentAttendanceRoute = StudentAttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
+  getParentRoute: () => StudentRoute,
 } as any)
 const AdminStudentsRoute = AdminStudentsRouteImport.update({
   id: '/students',
@@ -103,7 +145,10 @@ const AdminAlertsRoute = AdminAlertsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/access-denied': typeof AccessDeniedRoute
   '/admin': typeof AdminRouteWithChildren
+  '/login': typeof LoginRoute
+  '/student': typeof StudentRouteWithChildren
   '/admin/alerts': typeof AdminAlertsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/attendance': typeof AdminAttendanceRoute
@@ -116,10 +161,16 @@ export interface FileRoutesByFullPath {
   '/admin/roles': typeof AdminRolesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/students': typeof AdminStudentsRoute
+  '/student/attendance': typeof StudentAttendanceRoute
+  '/student/help': typeof StudentHelpRoute
+  '/student/profile': typeof StudentProfileRoute
   '/admin/': typeof AdminIndexRoute
+  '/student/': typeof StudentIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/access-denied': typeof AccessDeniedRoute
+  '/login': typeof LoginRoute
   '/admin/alerts': typeof AdminAlertsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/attendance': typeof AdminAttendanceRoute
@@ -132,12 +183,19 @@ export interface FileRoutesByTo {
   '/admin/roles': typeof AdminRolesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/students': typeof AdminStudentsRoute
+  '/student/attendance': typeof StudentAttendanceRoute
+  '/student/help': typeof StudentHelpRoute
+  '/student/profile': typeof StudentProfileRoute
   '/admin': typeof AdminIndexRoute
+  '/student': typeof StudentIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/access-denied': typeof AccessDeniedRoute
   '/admin': typeof AdminRouteWithChildren
+  '/login': typeof LoginRoute
+  '/student': typeof StudentRouteWithChildren
   '/admin/alerts': typeof AdminAlertsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/attendance': typeof AdminAttendanceRoute
@@ -150,13 +208,20 @@ export interface FileRoutesById {
   '/admin/roles': typeof AdminRolesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/students': typeof AdminStudentsRoute
+  '/student/attendance': typeof StudentAttendanceRoute
+  '/student/help': typeof StudentHelpRoute
+  '/student/profile': typeof StudentProfileRoute
   '/admin/': typeof AdminIndexRoute
+  '/student/': typeof StudentIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/access-denied'
     | '/admin'
+    | '/login'
+    | '/student'
     | '/admin/alerts'
     | '/admin/analytics'
     | '/admin/attendance'
@@ -169,10 +234,16 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/settings'
     | '/admin/students'
+    | '/student/attendance'
+    | '/student/help'
+    | '/student/profile'
     | '/admin/'
+    | '/student/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/access-denied'
+    | '/login'
     | '/admin/alerts'
     | '/admin/analytics'
     | '/admin/attendance'
@@ -185,11 +256,18 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/settings'
     | '/admin/students'
+    | '/student/attendance'
+    | '/student/help'
+    | '/student/profile'
     | '/admin'
+    | '/student'
   id:
     | '__root__'
     | '/'
+    | '/access-denied'
     | '/admin'
+    | '/login'
+    | '/student'
     | '/admin/alerts'
     | '/admin/analytics'
     | '/admin/attendance'
@@ -202,21 +280,49 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/settings'
     | '/admin/students'
+    | '/student/attendance'
+    | '/student/help'
+    | '/student/profile'
     | '/admin/'
+    | '/student/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccessDeniedRoute: typeof AccessDeniedRoute
   AdminRoute: typeof AdminRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  StudentRoute: typeof StudentRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/student': {
+      id: '/student'
+      path: '/student'
+      fullPath: '/student'
+      preLoaderRoute: typeof StudentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/access-denied': {
+      id: '/access-denied'
+      path: '/access-denied'
+      fullPath: '/access-denied'
+      preLoaderRoute: typeof AccessDeniedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -226,12 +332,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/student/': {
+      id: '/student/'
+      path: '/'
+      fullPath: '/student/'
+      preLoaderRoute: typeof StudentIndexRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/student/profile': {
+      id: '/student/profile'
+      path: '/profile'
+      fullPath: '/student/profile'
+      preLoaderRoute: typeof StudentProfileRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/help': {
+      id: '/student/help'
+      path: '/help'
+      fullPath: '/student/help'
+      preLoaderRoute: typeof StudentHelpRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/attendance': {
+      id: '/student/attendance'
+      path: '/attendance'
+      fullPath: '/student/attendance'
+      preLoaderRoute: typeof StudentAttendanceRouteImport
+      parentRoute: typeof StudentRoute
     }
     '/admin/students': {
       id: '/admin/students'
@@ -354,9 +488,29 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface StudentRouteChildren {
+  StudentAttendanceRoute: typeof StudentAttendanceRoute
+  StudentHelpRoute: typeof StudentHelpRoute
+  StudentProfileRoute: typeof StudentProfileRoute
+  StudentIndexRoute: typeof StudentIndexRoute
+}
+
+const StudentRouteChildren: StudentRouteChildren = {
+  StudentAttendanceRoute: StudentAttendanceRoute,
+  StudentHelpRoute: StudentHelpRoute,
+  StudentProfileRoute: StudentProfileRoute,
+  StudentIndexRoute: StudentIndexRoute,
+}
+
+const StudentRouteWithChildren =
+  StudentRoute._addFileChildren(StudentRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccessDeniedRoute: AccessDeniedRoute,
   AdminRoute: AdminRouteWithChildren,
+  LoginRoute: LoginRoute,
+  StudentRoute: StudentRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
