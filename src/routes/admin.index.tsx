@@ -102,7 +102,7 @@ function Dashboard() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Department-wise Attendance">
+        <SectionCard to="/admin/analytics" title="Department-wise Attendance">
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={departmentAttendance} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
