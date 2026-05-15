@@ -35,16 +35,16 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-        <StatCard label="Total Students" value="1,240" sub="+24 this month" icon={<Users className="size-5" />} />
-        <StatCard label="Present Today" value="1,078" sub="86.9% of roster" tone="success" icon={<UserCheck className="size-5" />} />
-        <StatCard label="Absent Today" value="162" sub="13.1% of roster" tone="danger" icon={<UserX className="size-5" />} />
-        <StatCard label="Late Students" value="48" sub="−12 vs yesterday" tone="warning" icon={<Clock className="size-5" />} />
-        <StatCard label="Active Cameras" value="12 / 14" sub="2 offline · maintenance" tone="info" icon={<Camera className="size-5" />} />
-        <StatCard label="Spoof Attempts" value="7" sub="3 critical · 4 medium" tone="danger" icon={<ShieldAlert className="size-5" />} />
-        <StatCard label="Unknown Faces" value="13" sub="Needs review" tone="warning" icon={<EyeOff className="size-5" />} />
-        <StatCard label="Avg Attendance" value="86.9%" sub="+1.4 WoW" tone="success" icon={<TrendingUp className="size-5" />} />
-        <StatCard label="AI Confidence" value="92.4%" sub="ArcFace R100" icon={<Brain className="size-5" />} />
-        <StatCard label="System Uptime" value="99.8%" sub="30-day" tone="success" icon={<Activity className="size-5" />} />
+        <StatCard to="/admin/students" label="Total Students" value="1,240" sub="+24 this month" icon={<Users className="size-5" />} />
+        <StatCard to="/admin/attendance" label="Present Today" value="1,078" sub="86.9% of roster" tone="success" icon={<UserCheck className="size-5" />} />
+        <StatCard to="/admin/attendance" label="Absent Today" value="162" sub="13.1% of roster" tone="danger" icon={<UserX className="size-5" />} />
+        <StatCard to="/admin/attendance" label="Late Students" value="48" sub="−12 vs yesterday" tone="warning" icon={<Clock className="size-5" />} />
+        <StatCard to="/admin/cameras" label="Active Cameras" value="12 / 14" sub="2 offline · maintenance" tone="info" icon={<Camera className="size-5" />} />
+        <StatCard to="/admin/alerts" label="Spoof Attempts" value="7" sub="3 critical · 4 medium" tone="danger" icon={<ShieldAlert className="size-5" />} />
+        <StatCard to="/admin/alerts" label="Unknown Faces" value="13" sub="Needs review" tone="warning" icon={<EyeOff className="size-5" />} />
+        <StatCard to="/admin/analytics" label="Avg Attendance" value="86.9%" sub="+1.4 WoW" tone="success" icon={<TrendingUp className="size-5" />} />
+        <StatCard to="/admin/analytics" label="AI Confidence" value="92.4%" sub="ArcFace R100" icon={<Brain className="size-5" />} />
+        <StatCard to="/admin/health" label="System Uptime" value="99.8%" sub="30-day" tone="success" icon={<Activity className="size-5" />} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
