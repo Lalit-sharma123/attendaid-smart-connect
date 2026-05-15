@@ -179,7 +179,7 @@ function Dashboard() {
       </div>
 
       <SectionCard title="Recent Attendance Activity" action={
-        <a className="text-xs text-primary inline-flex items-center gap-1">View all <ArrowUpRight className="size-3" /></a>
+        <Link to="/admin/attendance" className="text-xs text-primary inline-flex items-center gap-1 hover:underline">View all <ArrowUpRight className="size-3" /></Link>
       }>
         <div className="overflow-x-auto -mx-5">
           <table className="w-full text-sm">
