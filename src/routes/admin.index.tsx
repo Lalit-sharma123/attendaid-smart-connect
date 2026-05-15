@@ -75,7 +75,7 @@ function Dashboard() {
           </div>
         </SectionCard>
 
-        <SectionCard title="AI Insights" action={<Sparkles className="size-4 text-primary" />}>
+        <SectionCard to="/admin/analytics" title="AI Insights" action={<Sparkles className="size-4 text-primary" />}>
           <div className="space-y-3">
             {aiInsights.map((i, idx) => (
               <div key={idx} className="flex gap-3 p-3 rounded-lg bg-secondary/50 border border-border/60">
