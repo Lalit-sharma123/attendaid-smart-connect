@@ -116,7 +116,7 @@ function Dashboard() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Camera Health">
+        <SectionCard to="/admin/cameras" title="Camera Health">
           <div className="h-[220px] flex items-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
