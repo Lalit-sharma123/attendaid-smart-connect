@@ -1,12 +1,14 @@
 import { cn } from "@/lib/utils";
+import { Link } from "@tanstack/react-router";
 
 export function StatCard({
-  label, value, sub, icon, tone = "default", className,
+  label, value, sub, icon, tone = "default", className, to,
 }: {
   label: string; value: string | number; sub?: string;
   icon?: React.ReactNode;
   tone?: "default" | "success" | "warning" | "danger" | "info";
   className?: string;
+  to?: string;
 }) {
   const toneCls = {
     default: "from-primary/10 to-primary/0 text-primary",
