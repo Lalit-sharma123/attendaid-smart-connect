@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { SectionCard } from "@/components/ui-kit";
-import { Cpu, HardDrive, MemoryStick, Database, Server, Activity } from "lucide-react";
+import { Cpu, HardDrive, MemoryStick, Database, Server, Activity, RefreshCw, FileDown, ScrollText } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export const Route = createFileRoute("/admin/health")({
   component: Health,
@@ -17,21 +21,45 @@ const services = [
   { name: "Camera Stream Service", status: "Healthy", uptime: "99.81%", latency: "92ms" },
 ];
 
-const latencyData = Array.from({ length: 20 }, (_, i) => ({ t: i, ms: 70 + Math.random() * 40 }));
+const latencyData = Array.from({ length: 20 }, (_, i) => ({ t: i, ms: 70 + Math.round(Math.random() * 40) }));
 
 function Health() {
+  const [restarting, setRestarting] = useState<string | null>(null);
+  const [logsFor, setLogsFor] = useState<string | null>(null);
+  const [gauge, setGauge] = useState<{ label: string; value: number } | null>(null);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">System Health</h1>
-        <p className="text-sm text-muted-foreground">Live infrastructure monitoring and inference performance.</p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">System Health</h1>
+          <p className="text-sm text-muted-foreground">Live infrastructure monitoring and inference performance.</p>
+        </div>
+        <button onClick={() => toast.success("Diagnostics bundle generated")} className="inline-flex items-center gap-2 h-9 px-3 rounded-md border text-sm"><FileDown className="size-4" /> Download Diagnostics</button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Gauge icon={Cpu} label="CPU" value={42} />
-        <Gauge icon={MemoryStick} label="GPU" value={78} />
-        <Gauge icon={Database} label="RAM" value={61} />
-        <Gauge icon={HardDrive} label="Disk" value={34} />
+        {[
+          { icon: Cpu, label: "CPU", value: 42 },
+          { icon: MemoryStick, label: "GPU", value: 78 },
+          { icon: Database, label: "RAM", value: 61 },
+          { icon: HardDrive, label: "Disk", value: 34 },
+        ].map((g) => {
+          const Icon = g.icon;
+          return (
+            <button key={g.label} onClick={() => setGauge(g)} className="rounded-xl border bg-card p-5 text-left hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <div className="size-9 rounded-lg bg-primary/10 text-primary grid place-items-center"><Icon className="size-4" /></div>
+                <Activity className="size-4 text-muted-foreground" />
+              </div>
+              <div className="mt-3 text-xs text-muted-foreground">{g.label} usage</div>
+              <div className="mt-1 text-2xl font-semibold tabular-nums">{g.value}%</div>
+              <div className="mt-2 h-1.5 rounded-full bg-secondary overflow-hidden">
+                <div className={`h-full ${g.value > 80 ? "bg-destructive" : g.value > 60 ? "bg-warning" : "bg-success"}`} style={{ width: `${g.value}%` }} />
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -71,27 +99,44 @@ function Health() {
                   <div className="text-[11px] text-muted-foreground">uptime {s.uptime} · {s.latency}</div>
                 </div>
               </div>
-              <span className={`text-xs font-medium ${s.status === "Healthy" ? "text-success" : "text-warning-foreground"}`}>● {s.status}</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setLogsFor(s.name)} className="size-7 rounded grid place-items-center hover:bg-secondary" title="View logs"><ScrollText className="size-3.5" /></button>
+                <button onClick={() => setRestarting(s.name)} className="size-7 rounded grid place-items-center hover:bg-secondary" title="Restart"><RefreshCw className="size-3.5" /></button>
+                <span className={`text-xs font-medium ${s.status === "Healthy" ? "text-success" : "text-warning-foreground"}`}>● {s.status}</span>
+              </div>
             </div>
           ))}
         </div>
       </SectionCard>
-    </div>
-  );
-}
 
-function Gauge({ icon: Icon, label, value }: { icon: any; label: string; value: number }) {
-  return (
-    <div className="rounded-xl border bg-card p-5">
-      <div className="flex items-center justify-between">
-        <div className="size-9 rounded-lg bg-primary/10 text-primary grid place-items-center"><Icon className="size-4" /></div>
-        <Activity className="size-4 text-muted-foreground" />
-      </div>
-      <div className="mt-3 text-xs text-muted-foreground">{label} usage</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}%</div>
-      <div className="mt-2 h-1.5 rounded-full bg-secondary overflow-hidden">
-        <div className={`h-full ${value > 80 ? "bg-destructive" : value > 60 ? "bg-warning" : "bg-success"}`} style={{ width: `${value}%` }} />
-      </div>
+      <ConfirmDialog open={!!restarting} onOpenChange={(o) => !o && setRestarting(null)}
+        title={`Restart ${restarting}?`} description="Service may be unavailable for ~10 seconds."
+        confirmLabel="Restart" destructive
+        onConfirm={() => { toast.success(`${restarting} restarted`); setRestarting(null); }} />
+
+      <Dialog open={!!logsFor} onOpenChange={(o) => !o && setLogsFor(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>{logsFor} · Live Logs</DialogTitle><DialogDescription>Last 50 lines</DialogDescription></DialogHeader>
+          <pre className="rounded-md bg-secondary/40 p-3 text-[11px] font-mono max-h-80 overflow-y-auto">
+{[...Array(20)].map((_, i) => `[09:2${i % 10}:${10 + i}] INFO  ${logsFor ?? ""} request=${1000 + i} latency=${60 + (i * 7) % 80}ms status=200`).join("\n")}
+          </pre>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!gauge} onOpenChange={(o) => !o && setGauge(null)}>
+        <DialogContent className="max-w-sm">
+          {gauge && (
+            <>
+              <DialogHeader><DialogTitle>{gauge.label} usage · {gauge.value}%</DialogTitle><DialogDescription>Live snapshot</DialogDescription></DialogHeader>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between p-2.5 rounded bg-secondary/50"><span>1m avg</span><span>{gauge.value - 4}%</span></div>
+                <div className="flex justify-between p-2.5 rounded bg-secondary/50"><span>5m avg</span><span>{gauge.value - 9}%</span></div>
+                <div className="flex justify-between p-2.5 rounded bg-secondary/50"><span>Threshold</span><span>80%</span></div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
