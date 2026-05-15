@@ -132,7 +132,7 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <SectionCard title="Spoof Attempts (Today)" className="lg:col-span-1">
+        <SectionCard to="/admin/alerts" title="Spoof Attempts (Today)" className="lg:col-span-1">
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={spoofAttempts} margin={{ top: 5, right: 5, bottom: 0, left: -25 }}>
