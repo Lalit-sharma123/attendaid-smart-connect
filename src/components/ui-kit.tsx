@@ -1,14 +1,12 @@
 import { cn } from "@/lib/utils";
-import { Link } from "@tanstack/react-router";
 
 export function StatCard({
-  label, value, sub, icon, tone = "default", className, to,
+  label, value, sub, icon, tone = "default", className,
 }: {
   label: string; value: string | number; sub?: string;
   icon?: React.ReactNode;
   tone?: "default" | "success" | "warning" | "danger" | "info";
   className?: string;
-  to?: string;
 }) {
   const toneCls = {
     default: "from-primary/10 to-primary/0 text-primary",
@@ -18,10 +16,8 @@ export function StatCard({
     info: "from-info/15 to-info/0 text-info",
   }[tone];
 
-  const Wrapper: any = to ? Link : "div";
-  const wrapperProps = to ? { to, className: cn("relative overflow-hidden rounded-xl border bg-card p-5 block transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40", className) } : { className: cn("relative overflow-hidden rounded-xl border bg-card p-5", className) };
   return (
-    <Wrapper {...wrapperProps}>
+    <div className={cn("relative overflow-hidden rounded-xl border bg-card p-5", className)}>
       <div className={cn("absolute inset-x-0 top-0 h-px bg-gradient-to-r", toneCls)} />
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -35,16 +31,16 @@ export function StatCard({
           </div>
         )}
       </div>
-    </Wrapper>
+    </div>
   );
 }
 
-export function SectionCard({ title, action, children, className, to }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string; to?: string }) {
+export function SectionCard({ title, action, children, className }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-xl border bg-card", to && "transition-all hover:shadow-md hover:border-primary/40", className)}>
+    <div className={cn("rounded-xl border bg-card", className)}>
       {(title || action) && (
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          {title ? (to ? <Link to={to} className="text-sm font-semibold hover:text-primary">{title}</Link> : <h3 className="text-sm font-semibold">{title}</h3>) : <span />}
+          {title && <h3 className="text-sm font-semibold">{title}</h3>}
           {action}
         </div>
       )}
