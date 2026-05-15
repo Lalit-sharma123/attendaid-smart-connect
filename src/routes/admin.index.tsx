@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Users, UserCheck, UserX, Clock, Camera, ShieldAlert, EyeOff,
   TrendingUp, Brain, Activity, Sparkles, ArrowUpRight,
