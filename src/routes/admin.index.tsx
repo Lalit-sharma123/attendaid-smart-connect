@@ -48,8 +48,8 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <SectionCard title="Weekly Attendance Trend (Predicted vs Actual)" className="xl:col-span-2"
-          action={<span className="text-xs text-muted-foreground">AI forecast · 7 weeks</span>}>
+        <SectionCard to="/admin/analytics" title="Weekly Attendance Trend (Predicted vs Actual)" className="xl:col-span-2"
+          action={<Link to="/admin/analytics" className="text-xs text-muted-foreground hover:text-primary">AI forecast · 7 weeks</Link>}>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={weeklyTrend} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
