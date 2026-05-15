@@ -18,8 +18,10 @@ export function StatCard({
     info: "from-info/15 to-info/0 text-info",
   }[tone];
 
+  const Wrapper: any = to ? Link : "div";
+  const wrapperProps = to ? { to, className: cn("relative overflow-hidden rounded-xl border bg-card p-5 block transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40", className) } : { className: cn("relative overflow-hidden rounded-xl border bg-card p-5", className) };
   return (
-    <div className={cn("relative overflow-hidden rounded-xl border bg-card p-5", className)}>
+    <Wrapper {...wrapperProps}>
       <div className={cn("absolute inset-x-0 top-0 h-px bg-gradient-to-r", toneCls)} />
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -33,16 +35,16 @@ export function StatCard({
           </div>
         )}
       </div>
-    </div>
+    </Wrapper>
   );
 }
 
-export function SectionCard({ title, action, children, className }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
+export function SectionCard({ title, action, children, className, to }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string; to?: string }) {
   return (
-    <div className={cn("rounded-xl border bg-card", className)}>
+    <div className={cn("rounded-xl border bg-card", to && "transition-all hover:shadow-md hover:border-primary/40", className)}>
       {(title || action) && (
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          {title && <h3 className="text-sm font-semibold">{title}</h3>}
+          {title ? (to ? <Link to={to} className="text-sm font-semibold hover:text-primary">{title}</Link> : <h3 className="text-sm font-semibold">{title}</h3>) : <span />}
           {action}
         </div>
       )}
