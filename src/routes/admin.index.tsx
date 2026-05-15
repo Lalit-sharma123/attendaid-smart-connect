@@ -146,7 +146,7 @@ function Dashboard() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Class-wise Attendance Heatmap" className="lg:col-span-2">
+        <SectionCard to="/admin/analytics" title="Class-wise Attendance Heatmap" className="lg:col-span-2">
           <div className="space-y-1.5">
             {heatmap.map((row, ri) => (
               <div key={ri} className="flex items-center gap-1.5">
