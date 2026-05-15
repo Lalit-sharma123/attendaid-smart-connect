@@ -1,12 +1,15 @@
 import { cn } from "@/lib/utils";
+import { Link } from "@tanstack/react-router";
 
 export function StatCard({
-  label, value, sub, icon, tone = "default", className,
+  label, value, sub, icon, tone = "default", className, to, onClick,
 }: {
   label: string; value: string | number; sub?: string;
   icon?: React.ReactNode;
   tone?: "default" | "success" | "warning" | "danger" | "info";
   className?: string;
+  to?: string;
+  onClick?: () => void;
 }) {
   const toneCls = {
     default: "from-primary/10 to-primary/0 text-primary",
@@ -16,8 +19,8 @@ export function StatCard({
     info: "from-info/15 to-info/0 text-info",
   }[tone];
 
-  return (
-    <div className={cn("relative overflow-hidden rounded-xl border bg-card p-5", className)}>
+  const inner = (
+    <div className={cn("relative overflow-hidden rounded-xl border bg-card p-5 h-full text-left", (to || onClick) && "hover:shadow-md hover:border-primary/40 transition-all cursor-pointer", className)}>
       <div className={cn("absolute inset-x-0 top-0 h-px bg-gradient-to-r", toneCls)} />
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -33,11 +36,15 @@ export function StatCard({
       </div>
     </div>
   );
+
+  if (to) return <Link to={to as any} className="block">{inner}</Link>;
+  if (onClick) return <button type="button" onClick={onClick} className="block w-full">{inner}</button>;
+  return inner;
 }
 
-export function SectionCard({ title, action, children, className }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn("rounded-xl border bg-card", className)}>
+export function SectionCard({ title, action, children, className, to, onClick }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string; to?: string; onClick?: () => void }) {
+  const inner = (
+    <div className={cn("rounded-xl border bg-card", (to || onClick) && "hover:shadow-md hover:border-primary/30 transition-all cursor-pointer", className)}>
       {(title || action) && (
         <div className="flex items-center justify-between px-5 py-4 border-b">
           {title && <h3 className="text-sm font-semibold">{title}</h3>}
@@ -47,6 +54,9 @@ export function SectionCard({ title, action, children, className }: { title?: st
       <div className="p-5">{children}</div>
     </div>
   );
+  if (to) return <Link to={to as any} className="block">{inner}</Link>;
+  if (onClick) return <button type="button" onClick={onClick} className="block w-full text-left">{inner}</button>;
+  return inner;
 }
 
 export function StatusBadge({ status }: { status: string }) {

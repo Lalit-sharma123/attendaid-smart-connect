@@ -1,25 +1,42 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { SectionCard } from "@/components/ui-kit";
 import { monthlyCalendar, studentSubjects } from "@/lib/mock-data";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Download, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import { downloadCSV } from "@/lib/csv";
 
 export const Route = createFileRoute("/student/attendance")({
   component: MyAttendance,
   head: () => ({ meta: [{ title: "My Attendance — SmartAttend" }] }),
 });
 
-const trend = Array.from({ length: 12 }, (_, i) => ({ m: ["J","F","M","A","M","J","J","A","S","O","N","D"][i], pct: 70 + Math.round(Math.random()*25) }));
+const trend = Array.from({ length: 12 }, (_, i) => ({ m: ["J","F","M","A","M","J","J","A","S","O","N","D"][i], pct: 70 + ((i * 7) % 25) }));
 
 function MyAttendance() {
+  const [month, setMonth] = useState("May 2026");
+  const [subject, setSubject] = useState("All");
+
+  const filteredSubjects = subject === "All" ? studentSubjects : studentSubjects.filter((s) => s.subject === subject);
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-end">
+      <div className="flex justify-between items-end gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">My Attendance</h1>
           <p className="text-sm text-muted-foreground">Personal attendance history and class breakdown.</p>
         </div>
-        <button className="inline-flex items-center gap-2 h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm"><Download className="size-4" /> Download Report</button>
+        <div className="flex gap-2 flex-wrap">
+          <select value={month} onChange={(e) => setMonth(e.target.value)} className="h-9 px-3 rounded-md border text-sm bg-card">
+            {["May 2026", "Apr 2026", "Mar 2026"].map((m) => <option key={m}>{m}</option>)}
+          </select>
+          <select value={subject} onChange={(e) => setSubject(e.target.value)} className="h-9 px-3 rounded-md border text-sm bg-card">
+            <option>All</option>
+            {studentSubjects.map((s) => <option key={s.subject}>{s.subject}</option>)}
+          </select>
+          <button onClick={() => { downloadCSV("my-attendance.csv", studentSubjects); toast.success("Report downloaded"); }} className="inline-flex items-center gap-2 h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm"><Download className="size-4" /> Download Report</button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -30,7 +47,7 @@ function MyAttendance() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6">
-        <SectionCard title="May 2026">
+        <SectionCard title={month}>
           <div className="grid grid-cols-7 gap-1.5 text-xs">
             {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
               <div key={d} className="text-center text-muted-foreground py-1">{d}</div>
@@ -43,9 +60,10 @@ function MyAttendance() {
                 : d.status === "holiday" ? "bg-secondary text-muted-foreground"
                 : "bg-secondary/30 text-muted-foreground/40";
               return (
-                <div key={d.day} className={`aspect-square rounded-md border grid place-items-center font-medium tabular-nums ${cls}`}>
+                <button key={d.day} onClick={() => toast(`Day ${d.day} · ${d.status}`)}
+                  className={`aspect-square rounded-md border grid place-items-center font-medium tabular-nums ${cls}`}>
                   {d.day}
-                </div>
+                </button>
               );
             })}
           </div>
@@ -93,7 +111,7 @@ function MyAttendance() {
             </tr>
           </thead>
           <tbody>
-            {studentSubjects.map((s) => (
+            {filteredSubjects.map((s) => (
               <tr key={s.subject} className="border-b last:border-0">
                 <td className="py-3 font-medium">{s.subject}</td>
                 <td className="py-3 tabular-nums">{s.attended}</td>

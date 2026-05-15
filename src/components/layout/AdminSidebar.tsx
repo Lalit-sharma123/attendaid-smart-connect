@@ -1,10 +1,13 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, Radio, Users, ScanFace, ClipboardList, FileBarChart,
   Camera, Brain, AlertTriangle, ScrollText, ShieldCheck, Activity,
   Settings, LogOut, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { toast } from "sonner";
 
 const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -24,6 +27,8 @@ const items = [
 
 export function AdminSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <aside className="hidden md:flex flex-col w-64 shrink-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
@@ -61,11 +66,25 @@ export function AdminSidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
-        <Link to="/login" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+        <button
+          type="button"
+          onClick={() => setConfirmOpen(true)}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
           <LogOut className="size-4" />
           Logout
-        </Link>
+        </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Sign out of SmartAttend?"
+        description="You'll need to sign in again to access the admin portal."
+        confirmLabel="Sign out"
+        destructive
+        onConfirm={() => { toast.success("Signed out"); navigate({ to: "/login" }); }}
+      />
     </aside>
   );
 }
