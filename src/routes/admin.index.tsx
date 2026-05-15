@@ -88,7 +88,7 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <SectionCard title="Daily Attendance %">
+        <SectionCard to="/admin/analytics" title="Daily Attendance %">
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailyAttendance} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
