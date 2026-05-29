@@ -1,0 +1,35 @@
+Admin password reset successfully
+EMAIL: admin@attendaid.com
+PASSWORD: Admin@12345
+
+
+
+Student login: bca-1005@student.attendaid.com | password: Student@123
+Student login: bca-1003@student.attendaid.com | password: Student@123
+Student login: bca-1002@student.attendaid.com | password: Student@123
+Student login: bca-1000@student.attendaid.com | password: Student@123
+Student login: bca-1001@student.attendaid.com | password: Student@123
+Student login: lalit999@test.com | password: Student@123
+
+
+
+
+
+
+
+
+
+bca-1000@student.attendaid.com | status=ACTIVE | role=STUDENT
+bca-1001@student.attendaid.com | status=ACTIVE | role=STUDENT
+bca-1002@student.attendaid.com | status=ACTIVE | role=STUDENT
+bca-1003@student.attendaid.com | status=ACTIVE | role=STUDENT
+lalit999@test.com | status=ACTIVE | role=STUDENT
+mrengi444@gmail.com | status=ACTIVE | role=ADMIN
+
+
+
+cd ~/attendaid-smart-connect/ai-attendance-backend
+
+source .venv/bin/activate
+
+python -m uvicorn app.main:app --reload

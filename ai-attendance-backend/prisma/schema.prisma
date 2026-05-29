@@ -1,0 +1,992 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum RoleName {
+  SUPER_ADMIN
+  ADMIN
+  TEACHER
+  STUDENT
+  VIEWER
+}
+
+enum ConsentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  REVOKED
+}
+
+enum FaceEnrollmentStatus {
+  NOT_ENROLLED
+  IN_PROGRESS
+  ENROLLED
+  FAILED
+  RE_ENROLL_REQUIRED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  UNKNOWN
+  SPOOF_BLOCKED
+  MANUAL_CORRECTED
+}
+
+enum AttendanceSource {
+  FACE_RECOGNITION
+  STUDENT_SELF_MARK
+  CAMERA_AUTO
+  MANUAL
+  ADMIN_EDIT
+}
+
+enum CameraStatus {
+  ONLINE
+  OFFLINE
+  DEGRADED
+  PAUSED
+  ERROR
+}
+
+enum RecognitionEventType {
+  KNOWN_FACE
+  UNKNOWN_FACE
+  SPOOF_ATTEMPT
+  LIVENESS_FAILED
+  ATTENDANCE_MARKED
+  ALREADY_MARKED
+  FACE_NOT_RECOGNIZED
+  LOW_CONFIDENCE
+}
+
+enum AntiSpoofStatus {
+  REAL
+  SPOOF
+  UNCERTAIN
+  NOT_CHECKED
+}
+
+enum SpoofType {
+  MOBILE_SCREEN
+  PRINTED_PHOTO
+  VIDEO_REPLAY
+  MASK
+  DEEPFAKE
+  UNKNOWN
+}
+
+enum AlertType {
+  SPOOF_ATTEMPT
+  UNKNOWN_FACE
+  CAMERA_OFFLINE
+  CAMERA_DEGRADED
+  LOW_ATTENDANCE
+  SYSTEM_ERROR
+  FAILED_RECOGNITION
+  SUSPICIOUS_LOGIN
+  LIVENESS_FAILED
+  EXPORT_FAILED
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum AlertStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+
+enum ExportFileType {
+  CSV
+  PDF
+  EXCEL
+}
+
+enum ExportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ReportType {
+  DAILY_ATTENDANCE
+  MONTHLY_ATTENDANCE
+  CLASS_ATTENDANCE
+  STUDENT_HISTORY
+  LOW_ATTENDANCE
+  SPOOF_ATTEMPT
+  CAMERA_ACTIVITY
+  AUDIT_LOG
+  CUSTOM
+}
+
+enum LoginStatus {
+  SUCCESS
+  FAILED
+  BLOCKED
+}
+
+enum ImportBatchStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIAL_SUCCESS
+}
+
+enum SystemServiceStatus {
+  ONLINE
+  OFFLINE
+  DEGRADED
+  ERROR
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AuditSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// -----------------------------------------------------------------------------
+// AUTHENTICATION + RBAC
+// -----------------------------------------------------------------------------
+
+model User {
+  id               String     @id @default(uuid())
+  email            String     @unique
+  phone            String?
+  passwordHash     String     @map("password_hash")
+  roleId           String     @map("role_id")
+  status           UserStatus @default(ACTIVE)
+  twoFactorEnabled Boolean    @default(false) @map("two_factor_enabled")
+  lastLoginAt      DateTime?  @map("last_login_at")
+
+  role             Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  student          Student?
+
+  loginActivities  LoginActivity[]
+  passwordTokens   PasswordResetToken[]
+  twoFactorTokens  TwoFactorToken[]
+
+  uploadedStudentBatches StudentImportBatch[] @relation("StudentBatchUploader")
+
+  faceEnrollmentsDone FaceEnrollment[] @relation("FaceEnrollmentAdmin")
+
+  attendanceVerified AttendanceRecord[] @relation("AttendanceVerifier")
+  attendanceEditLogs  AttendanceEditLog[] @relation("AttendanceEditor")
+
+  cameraCalibrations CameraCalibration[] @relation("CameraCalibrator")
+
+  assignedAlerts Alert[] @relation("AlertAssignee")
+  resolvedAlerts Alert[] @relation("AlertResolver")
+
+  exportJobs ExportJob[] @relation("ExportRequester")
+  scheduledReports ScheduledReport[] @relation("ScheduledReportCreator")
+
+  updatedSettings AppSetting[] @relation("SettingUpdater")
+
+  auditLogs AuditLog[] @relation("AuditActor")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        RoleName @unique
+  description String?
+
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  key         String  @unique
+  description String?
+
+  roles       RolePermission[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model LoginActivity {
+  id            String      @id @default(uuid())
+  userId        String?     @map("user_id")
+  email         String?
+  ipAddress     String?     @map("ip_address")
+  userAgent     String?     @map("user_agent")
+  status        LoginStatus
+  failureReason String?     @map("failure_reason")
+  location      String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([email])
+  @@index([status])
+  @@map("login_activities")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model TwoFactorToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("two_factor_tokens")
+}
+
+// -----------------------------------------------------------------------------
+// ACADEMIC STRUCTURE
+// -----------------------------------------------------------------------------
+
+model Department {
+  id   String @id @default(uuid())
+  name String
+  code String @unique
+
+  classes  CourseClass[]
+  students Student[]
+
+  attendanceSessions    AttendanceSession[]
+  attendancePredictions AttendancePrediction[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("departments")
+}
+
+model CourseClass {
+  id           String @id @default(uuid())
+  departmentId String @map("department_id")
+  name         String
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  sections Section[]
+  students Student[]
+
+  attendanceSessions    AttendanceSession[]
+  attendancePredictions AttendancePrediction[]
+
+  assignedCameras Camera[] @relation("CameraAssignedClass")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([departmentId, name])
+  @@map("classes")
+}
+
+model Section {
+  id      String @id @default(uuid())
+  classId String @map("class_id")
+  name    String
+
+  courseClass CourseClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  students Student[]
+
+  attendanceSessions    AttendanceSession[]
+  attendancePredictions AttendancePrediction[]
+
+  assignedCameras Camera[] @relation("CameraAssignedSection")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([classId, name])
+  @@map("sections")
+}
+
+// -----------------------------------------------------------------------------
+// STUDENT MANAGEMENT
+// -----------------------------------------------------------------------------
+
+model Student {
+  id             String        @id @default(uuid())
+  userId         String        @unique @map("user_id")
+  rollNo         String        @unique @map("roll_no")
+  name           String
+  departmentId  String?       @map("department_id")
+  classId       String?       @map("class_id")
+  sectionId     String?       @map("section_id")
+  photoUrl       String?       @map("photo_url")
+  contactEmail   String?       @map("contact_email")
+  contactPhone   String?       @map("contact_phone")
+  address        String?
+  status         UserStatus    @default(ACTIVE)
+  consentStatus  ConsentStatus @default(PENDING) @map("consent_status")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department  Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  courseClass CourseClass? @relation(fields: [classId], references: [id], onDelete: SetNull)
+  section     Section?     @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
+  faceEnrollment FaceEnrollment?
+
+  attendanceRecords AttendanceRecord[]
+  recognitionEvents RecognitionEvent[]
+  spoofAttempts     SpoofAttempt[]
+  alerts            Alert[]
+  lowAttendanceRisks LowAttendanceRisk[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([departmentId])
+  @@index([classId])
+  @@index([sectionId])
+  @@index([status])
+  @@map("students")
+}
+
+model StudentImportBatch {
+  id               String            @id @default(uuid())
+  uploadedByUserId String            @map("uploaded_by_user_id")
+  fileUrl          String            @map("file_url")
+  totalRows        Int               @default(0) @map("total_rows")
+  successCount     Int               @default(0) @map("success_count")
+  failedCount      Int               @default(0) @map("failed_count")
+  status           ImportBatchStatus @default(PENDING)
+
+  uploadedBy User @relation("StudentBatchUploader", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+
+  errors StudentImportError[]
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  @@index([uploadedByUserId])
+  @@map("student_import_batches")
+}
+
+model StudentImportError {
+  id           String @id @default(uuid())
+  batchId      String @map("batch_id")
+  rowNumber    Int    @map("row_number")
+  errorMessage String @map("error_message")
+  rawData      Json?  @map("raw_data")
+
+  batch StudentImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([batchId])
+  @@map("student_import_errors")
+}
+
+// -----------------------------------------------------------------------------
+// FACE ENROLLMENT
+// -----------------------------------------------------------------------------
+
+model FaceEnrollment {
+  id                 String               @id @default(uuid())
+  studentId          String               @unique @map("student_id")
+  status             FaceEnrollmentStatus @default(NOT_ENROLLED)
+  embeddingVersion   String?              @map("embedding_version")
+  qualityScore       Float?               @map("quality_score")
+  livenessVerified   Boolean              @default(false) @map("liveness_verified")
+  enrolledByUserId   String?              @map("enrolled_by_user_id")
+  enrolledAt         DateTime?            @map("enrolled_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  enrolledBy User? @relation("FaceEnrollmentAdmin", fields: [enrolledByUserId], references: [id], onDelete: SetNull)
+
+  samples    FaceSample[]
+  embeddings FaceEmbedding[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("face_enrollments")
+}
+
+model FaceSample {
+  id              String  @id @default(uuid())
+  enrollmentId    String  @map("enrollment_id")
+  imageUrl        String  @map("image_url")
+  qualityScore    Float?  @map("quality_score")
+  blurScore       Float?  @map("blur_score")
+  lightingScore   Float?  @map("lighting_score")
+  angleScore      Float?  @map("angle_score")
+  faceDetected    Boolean @default(false) @map("face_detected")
+  feedbackMessage String? @map("feedback_message")
+  metadata        Json?
+
+  enrollment FaceEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([enrollmentId])
+  @@map("face_samples")
+}
+
+model FaceEmbedding {
+  id           String  @id @default(uuid())
+  enrollmentId String  @map("enrollment_id")
+  vector       Json
+  modelName    String  @map("model_name")
+  modelVersion String  @map("model_version")
+  encrypted    Boolean @default(true)
+  isActive     Boolean @default(true) @map("is_active")
+
+  enrollment FaceEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([enrollmentId])
+  @@map("face_embeddings")
+}
+
+// -----------------------------------------------------------------------------
+// ATTENDANCE
+// -----------------------------------------------------------------------------
+
+model AttendanceSession {
+  id                         String  @id @default(uuid())
+  name                       String
+  departmentId               String? @map("department_id")
+  classId                    String? @map("class_id")
+  sectionId                  String? @map("section_id")
+  startTime                  String  @map("start_time")
+  endTime                    String  @map("end_time")
+  lateAfterTime              String  @map("late_after_time")
+  duplicatePreventionMinutes Int     @default(30) @map("duplicate_prevention_minutes")
+  active                     Boolean @default(true)
+
+  department  Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  courseClass CourseClass? @relation(fields: [classId], references: [id], onDelete: SetNull)
+  section     Section?     @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
+  records AttendanceRecord[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([departmentId])
+  @@index([classId])
+  @@index([sectionId])
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id                    String           @id @default(uuid())
+  studentId             String           @map("student_id")
+  sessionId             String?          @map("session_id")
+  date                  DateTime
+  checkInTime           DateTime?        @map("check_in_time")
+  status                AttendanceStatus
+  recognitionConfidence Float?           @map("recognition_confidence")
+  livenessScore         Float?           @map("liveness_score")
+  cameraId              String?          @map("camera_id")
+  verifiedByUserId      String?          @map("verified_by_user_id")
+  source                AttendanceSource @default(FACE_RECOGNITION)
+  editReason            String?          @map("edit_reason")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session AttendanceSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  camera  Camera? @relation(fields: [cameraId], references: [id], onDelete: SetNull)
+
+  verifiedBy User? @relation("AttendanceVerifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  editLogs AttendanceEditLog[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([studentId, date, sessionId])
+  @@index([studentId])
+  @@index([date])
+  @@index([status])
+  @@index([cameraId])
+  @@map("attendance_records")
+}
+
+model AttendanceEditLog {
+  id                 String           @id @default(uuid())
+  attendanceRecordId String           @map("attendance_record_id")
+  editedByUserId     String           @map("edited_by_user_id")
+  oldStatus          AttendanceStatus @map("old_status")
+  newStatus          AttendanceStatus @map("new_status")
+  reason             String
+  oldValue           Json?            @map("old_value")
+  newValue           Json?            @map("new_value")
+
+  attendanceRecord AttendanceRecord @relation(fields: [attendanceRecordId], references: [id], onDelete: Cascade)
+  editedBy         User             @relation("AttendanceEditor", fields: [editedByUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([attendanceRecordId])
+  @@index([editedByUserId])
+  @@map("attendance_edit_logs")
+}
+
+// -----------------------------------------------------------------------------
+// CAMERAS
+// -----------------------------------------------------------------------------
+
+model Camera {
+  id                String       @id @default(uuid())
+  name              String
+  location          String
+  rtspUrlEncrypted  String?      @map("rtsp_url_encrypted")
+  maskedRtspUrl     String?      @map("masked_rtsp_url")
+  status            CameraStatus @default(OFFLINE)
+  fps               Float?
+  latencyMs         Int?         @map("latency_ms")
+  lastHeartbeatAt   DateTime?    @map("last_heartbeat_at")
+  assignedClassId   String?      @map("assigned_class_id")
+  assignedSectionId String?      @map("assigned_section_id")
+  modelProfileId    String?      @map("model_profile_id")
+  healthScore       Float?       @map("health_score")
+  enabled           Boolean      @default(true)
+
+  assignedClass   CourseClass? @relation("CameraAssignedClass", fields: [assignedClassId], references: [id], onDelete: SetNull)
+  assignedSection Section?     @relation("CameraAssignedSection", fields: [assignedSectionId], references: [id], onDelete: SetNull)
+
+  heartbeats        CameraHeartbeat[]
+  calibrations      CameraCalibration[]
+  attendanceRecords AttendanceRecord[]
+  recognitionEvents RecognitionEvent[]
+  unknownFaces      UnknownFace[]
+  spoofAttempts     SpoofAttempt[]
+  alerts            Alert[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([assignedClassId])
+  @@index([assignedSectionId])
+  @@map("cameras")
+}
+
+model CameraHeartbeat {
+  id        String       @id @default(uuid())
+  cameraId  String       @map("camera_id")
+  status    CameraStatus
+  fps       Float?
+  latencyMs Int?         @map("latency_ms")
+  cpuUsage  Float?       @map("cpu_usage")
+  gpuUsage  Float?       @map("gpu_usage")
+  ramUsage  Float?       @map("ram_usage")
+  metadata  Json?
+
+  camera Camera @relation(fields: [cameraId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([cameraId])
+  @@index([status])
+  @@map("camera_heartbeats")
+}
+
+model CameraCalibration {
+  id                   String @id @default(uuid())
+  cameraId             String @map("camera_id")
+  calibrationData      Json   @map("calibration_data")
+  calibratedByUserId   String? @map("calibrated_by_user_id")
+
+  camera       Camera @relation(fields: [cameraId], references: [id], onDelete: Cascade)
+  calibratedBy User?  @relation("CameraCalibrator", fields: [calibratedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([cameraId])
+  @@map("camera_calibrations")
+}
+
+// -----------------------------------------------------------------------------
+// AI RECOGNITION EVENTS
+// -----------------------------------------------------------------------------
+
+model RecognitionEvent {
+  id                    String                @id @default(uuid())
+  cameraId              String?               @map("camera_id")
+  studentId             String?               @map("student_id")
+  trackingId            String?               @map("tracking_id")
+  eventType             RecognitionEventType  @map("event_type")
+  recognitionConfidence Float?                @map("recognition_confidence")
+  livenessScore         Float?                @map("liveness_score")
+  spoofScore            Float?                @map("spoof_score")
+  antiSpoofStatus       AntiSpoofStatus       @default(NOT_CHECKED) @map("anti_spoof_status")
+  attendanceStatus      AttendanceStatus?     @map("attendance_status")
+  snapshotUrl           String?               @map("snapshot_url")
+  modelLatencyMs        Int?                  @map("model_latency_ms")
+  modelName             String?               @map("model_name")
+  modelVersion          String?               @map("model_version")
+  metadata              Json?
+
+  camera  Camera?  @relation(fields: [cameraId], references: [id], onDelete: SetNull)
+  student Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+
+  spoofAttempt SpoofAttempt?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([cameraId])
+  @@index([studentId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("recognition_events")
+}
+
+model UnknownFace {
+  id          String   @id @default(uuid())
+  cameraId    String?  @map("camera_id")
+  snapshotUrl String?  @map("snapshot_url")
+  clusterId   String?  @map("cluster_id")
+  confidence  Float?
+  firstSeenAt DateTime @map("first_seen_at")
+  lastSeenAt  DateTime @map("last_seen_at")
+  metadata    Json?
+
+  camera Camera? @relation(fields: [cameraId], references: [id], onDelete: SetNull)
+
+  @@index([cameraId])
+  @@index([clusterId])
+  @@map("unknown_faces")
+}
+
+model SpoofAttempt {
+  id            String    @id @default(uuid())
+  cameraId      String?   @map("camera_id")
+  studentId     String?   @map("student_id")
+  eventId        String?   @unique @map("event_id")
+  spoofType      SpoofType @default(UNKNOWN) @map("spoof_type")
+  livenessScore  Float?    @map("liveness_score")
+  spoofScore     Float?    @map("spoof_score")
+  snapshotUrl    String?   @map("snapshot_url")
+  severity       Severity  @default(HIGH)
+  metadata       Json?
+
+  camera  Camera? @relation(fields: [cameraId], references: [id], onDelete: SetNull)
+  student Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  event   RecognitionEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([cameraId])
+  @@index([studentId])
+  @@index([severity])
+  @@map("spoof_attempts")
+}
+
+// -----------------------------------------------------------------------------
+// ALERTS + INCIDENTS
+// -----------------------------------------------------------------------------
+
+model Alert {
+  id                String      @id @default(uuid())
+  type              AlertType
+  severity          Severity
+  title             String
+  message           String
+  status            AlertStatus @default(OPEN)
+  relatedCameraId   String?     @map("related_camera_id")
+  relatedStudentId  String?     @map("related_student_id")
+  assignedToUserId  String?     @map("assigned_to_user_id")
+  resolvedByUserId  String?     @map("resolved_by_user_id")
+  resolvedAt        DateTime?   @map("resolved_at")
+  metadata          Json?
+
+  relatedCamera  Camera?  @relation(fields: [relatedCameraId], references: [id], onDelete: SetNull)
+  relatedStudent Student? @relation(fields: [relatedStudentId], references: [id], onDelete: SetNull)
+
+  assignedTo User? @relation("AlertAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  resolvedBy User? @relation("AlertResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+
+  evidence IncidentEvidence[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@map("alerts")
+}
+
+model IncidentEvidence {
+  id           String @id @default(uuid())
+  alertId      String @map("alert_id")
+  snapshotUrl  String? @map("snapshot_url")
+  videoClipUrl String? @map("video_clip_url")
+  metadata     Json?
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([alertId])
+  @@map("incident_evidence")
+}
+
+// -----------------------------------------------------------------------------
+// REPORTS + EXPORTS
+// -----------------------------------------------------------------------------
+
+model ExportJob {
+  id                String          @id @default(uuid())
+  requestedByUserId String          @map("requested_by_user_id")
+  reportType        ReportType      @map("report_type")
+  fileType          ExportFileType  @map("file_type")
+  filters           Json?
+  selectedColumns   Json?           @map("selected_columns")
+  status            ExportJobStatus @default(PENDING)
+  fileUrl           String?         @map("file_url")
+  progress          Int             @default(0)
+  errorMessage      String?         @map("error_message")
+
+  requestedBy User @relation("ExportRequester", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  @@index([requestedByUserId])
+  @@index([reportType])
+  @@index([status])
+  @@map("export_jobs")
+}
+
+model ScheduledReport {
+  id              String     @id @default(uuid())
+  createdByUserId String     @map("created_by_user_id")
+  reportType      ReportType @map("report_type")
+  scheduleCron    String     @map("schedule_cron")
+  recipients      Json
+  filters         Json?
+  active          Boolean    @default(true)
+  lastRunAt       DateTime?  @map("last_run_at")
+  nextRunAt       DateTime?  @map("next_run_at")
+
+  createdBy User @relation("ScheduledReportCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([createdByUserId])
+  @@index([active])
+  @@map("scheduled_reports")
+}
+
+// -----------------------------------------------------------------------------
+// AI ANALYTICS
+// -----------------------------------------------------------------------------
+
+model AiInsight {
+  id                String   @id @default(uuid())
+  type              String
+  title             String
+  description       String
+  severity          Severity @default(INFO)
+  confidence        Float?
+  recommendedAction String?  @map("recommended_action")
+  metadata          Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([severity])
+  @@map("ai_insights")
+}
+
+model AttendancePrediction {
+  id                            String    @id @default(uuid())
+  departmentId                  String?   @map("department_id")
+  classId                       String?   @map("class_id")
+  sectionId                     String?   @map("section_id")
+  predictionDate                DateTime  @map("prediction_date")
+  predictedAttendancePercentage Float     @map("predicted_attendance_percentage")
+  riskLevel                     RiskLevel @map("risk_level")
+  modelVersion                  String?   @map("model_version")
+  metadata                      Json?
+
+  department  Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  courseClass CourseClass? @relation(fields: [classId], references: [id], onDelete: SetNull)
+  section     Section?     @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([departmentId])
+  @@index([classId])
+  @@index([sectionId])
+  @@index([predictionDate])
+  @@map("attendance_predictions")
+}
+
+model LowAttendanceRisk {
+  id                   String    @id @default(uuid())
+  studentId            String    @map("student_id")
+  attendancePercentage Float     @map("attendance_percentage")
+  riskLevel            RiskLevel @map("risk_level")
+  reason               String?
+  recommendedAction    String?   @map("recommended_action")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([studentId])
+  @@index([riskLevel])
+  @@map("low_attendance_risks")
+}
+
+// -----------------------------------------------------------------------------
+// SYSTEM HEALTH
+// -----------------------------------------------------------------------------
+
+model SystemHealthLog {
+  id          String              @id @default(uuid())
+  serviceName String              @map("service_name")
+  status      SystemServiceStatus
+  cpuUsage    Float?              @map("cpu_usage")
+  gpuUsage    Float?              @map("gpu_usage")
+  ramUsage    Float?              @map("ram_usage")
+  diskUsage   Float?              @map("disk_usage")
+  latencyMs   Int?                @map("latency_ms")
+  queueSize   Int?                @map("queue_size")
+  errorRate   Float?              @map("error_rate")
+  uptime      Float?
+  logs        String?
+  metadata    Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([serviceName])
+  @@index([status])
+  @@map("system_health_logs")
+}
+
+// -----------------------------------------------------------------------------
+// SETTINGS
+// -----------------------------------------------------------------------------
+
+model AppSetting {
+  id              String @id @default(uuid())
+  key             String @unique
+  value           Json
+  description     String?
+  updatedByUserId String? @map("updated_by_user_id")
+
+  updatedBy User? @relation("SettingUpdater", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
+// -----------------------------------------------------------------------------
+// AUDIT LOGS
+// -----------------------------------------------------------------------------
+
+model AuditLog {
+  id          String        @id @default(uuid())
+  actorUserId String?       @map("actor_user_id")
+  action      String
+  entityType  String        @map("entity_type")
+  entityId    String?       @map("entity_id")
+  oldValue    Json?         @map("old_value")
+  newValue    Json?         @map("new_value")
+  ipAddress   String?       @map("ip_address")
+  userAgent   String?       @map("user_agent")
+  severity    AuditSeverity @default(INFO)
+  metadata    Json?
+
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([actorUserId])
+  @@index([action])
+  @@index([entityType])
+  @@index([severity])
+  @@map("audit_logs")
+}

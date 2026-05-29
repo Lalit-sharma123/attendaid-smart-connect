@@ -1,0 +1,32 @@
+[project]
+name = "ai-attendance-backend"
+version = "0.1.0"
+description = "AI Attendance Backend using FastAPI, PostgreSQL and Prisma"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "prisma>=0.15.0",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.4.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.9",
+    "pandas>=2.2.0",
+    "openpyxl>=3.1.5",
+    "reportlab>=4.2.0",
+    "email-validator>=2.3.0",
+    "opencv-python>=4.13.0.92",
+    "mediapipe>=0.10.35",
+    "insightface>=0.7.3",
+    "onnxruntime>=1.26.0",
+    "numpy>=2.4.6",
+    "pillow>=12.2.0",
+    "opencv-python-headless>=4.13.0.92",
+    "httpx>=0.28.1",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.6.0",
+]
